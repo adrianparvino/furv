@@ -11,7 +11,7 @@ module uart#(
     input [7:0] tx_data,
     output tx_ack,
 
-    output [7:0] rx_data,
+    output reg [7:0] rx_data,
     input rx_pop,
     output reg rx_ack = 0
 );
@@ -75,10 +75,10 @@ reg [3:0] rx_state = 9;
 
 wire rx_empty = rx_read_i == rx_write_i;
 wire rx_full = (rx_read_i ^ rx_write_i) == RX_FIFO;
-assign rx_data = rx_shift_registers[rx_read_i[$clog2(RX_FIFO)-1:0] - 1];
 
 always @(posedge clk) begin
   if (rx_pop && !rx_empty) begin
+    rx_data <= rx_shift_registers[rx_read_i[$clog2(RX_FIFO)-1:0]];
     rx_read_i <= rx_read_i + 1;
     rx_ack <= 1;
   end else begin
