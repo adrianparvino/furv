@@ -9,6 +9,7 @@ opt -full -fine alu
 
 fsm uart
 
+techmap lu
 abc -lut 4:8 lu
 
 flatten alu

@@ -17,9 +17,13 @@ module alu #(
   output arith_signed_compare,
 
   output [WIDTH-1:0] arith_out,
-  output [WIDTH-1:0] logic_out,
+  output reg [WIDTH-1:0] logic_out = 0,
   output comparison_out
 );
+
+wire [WIDTH-1:0] lu_out;
+reg [2*WIDTH-2:0] shifter;
+reg ignore;
 
 au #(.WIDTH(WIDTH)) au(
   .ra(ra),
@@ -35,7 +39,7 @@ lu #(.WIDTH(WIDTH)) lu(
   .rb(rb),
   .alt(logic_alt),
   .funct3(funct3),
-  .out(logic_out)
+  .out(lu_out)
 );
 
 cu #(.WIDTH(WIDTH)) cu(
@@ -48,5 +52,11 @@ cu #(.WIDTH(WIDTH)) cu(
 
   .out(comparison_out)
 );
+
+always @* begin
+  shifter = {{WIDTH{logic_alt & ra[WIDTH-1]}}, ra} << (funct3[2] ? ~rb[$clog2(WIDTH)-1:0] : rb[$clog2(WIDTH)-1:0]);
+
+  logic_out = funct3[1:0] == 1 ? (funct3[2] ? shifter[2*WIDTH-2:WIDTH-1] : shifter[WIDTH-1:0]) : lu_out;
+end
 
 endmodule
