@@ -1,0 +1,18 @@
+read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v rom.v ram.v uart.v top.v
+proc;;
+
+# Test
+alumacc
+share -aggressive au
+share -aggressive cu
+opt -full -fine alu
+
+fsm uart
+
+abc -lut 4:8 lu
+
+flatten alu
+opt -fine -full;;
+share -aggressive
+
+synth_gowin -json myrv.json
