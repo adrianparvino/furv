@@ -11,8 +11,8 @@ module cu #(
   output reg out = 0
 );
 
-wire [WIDTH-1:0] ra_ = {!unsigned_comparison, {(WIDTH-1){1'b0}}} ^ ra;
-wire [WIDTH-1:0] rb_ = {!unsigned_comparison, {(WIDTH-1){1'b0}}} ^ rb;
+wire [WIDTH-1:0] ra_ = {!unsigned_comparison ^ ra[WIDTH-1], ra[WIDTH-2:0]};
+wire [WIDTH-1:0] rb_ = {!unsigned_comparison ^ rb[WIDTH-1], rb[WIDTH-2:0]};
 
 wire lt_result = ra_ < rb_;
 wire eq_result = ~|(ra_ - rb_);
