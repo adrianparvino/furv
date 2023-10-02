@@ -29,7 +29,7 @@ wire tx_ack;
 wire [7:0] uart_rx_data;
 wire uart_rx_ack;
 
-wire ram_select = 256 <= addr && addr < 256 + 256;
+wire ram_select = 2048 <= addr && addr < 2048 + 1024;
 wire led_select = addr == 1024;
 wire uart_tx_select = addr == 1028;
 wire uart_rx_select = addr == 1032;
@@ -63,16 +63,17 @@ uart #(.CLOCKS_PER_BIT(104), .TX_FIFO(16), .RX_FIFO(16)) uart(
 );
 
 ram ram(
-    .read_addr(addr[7:2]),
-    .data_out(ram_out),
-    .mem_read(mem_en && !mem_write && ram_select),
-    .read_ack(ram_read_ack),
-    .read_clk(sysclk),
+    .addr(addr[9:2]),
 
-    .write_addr(addr[7:2]),
     .data_in(data_out),
-    .mem_write(mem_en && mem_write && ram_select),
-    .write_clk(sysclk)
+    .data_out(ram_out),
+
+    .ack(ram_read_ack),
+
+    .mem_en(mem_en && ram_select),
+    .mem_write(mem_write),
+
+    .clk(sysclk)
 );
 
 rom rom(
