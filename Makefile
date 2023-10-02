@@ -29,6 +29,12 @@ count.bin: count.elf
 firmware: count.bin
 	{ echo @00000000 ; { hexdump -v -e '1/1 "%02x "' count.bin; yes '00 ' | tr -d '\n'; } | head -c 768; } > firmware
 
+furv.cpp: count.bin au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v
+	yosys -q -l cxxrtl.log -p "read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v; hierarchy -top furv;; proc;; splitnets w:*EN* ;; flatten;; opt;; wreduce;; opt -fine -full;; wreduce;; opt_clean -purge;; write_cxxrtl furv.cpp"
+
+sim: sim.cpp furv.cpp
+	g++ -O3 -std=c++14 -I `yosys-config --datdir`/include sim.cpp -o sim
+
 .PHONY: clean
 
 clean:
