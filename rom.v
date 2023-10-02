@@ -1,4 +1,5 @@
-module rom(
+(* techmap_celltype = "rom" *)
+module rom_impl(
   input [31:0] pc,
   output [31:0] instruction
 );
