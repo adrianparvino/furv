@@ -1,40 +1,27 @@
-read_verilog -specify -lib +/gowin/cells_sim.v
-read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v ram.v uart.v top.v shifter.v rom_sim.v
+read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v ram.v uart.v shifter.v rom_sim.v top.v
 
-hierarchy -top top
+hierarchy -top top;;
 
-proc
+proc;;
 
-splitnets w:*EN*;;
+alumacc *\au*;;
+share -aggressive *\au*;;
+opt -full -fine *\au*;;
 
-alumacc *au*
-share -aggressive *au*
-opt -full -fine *au*;;
+alumacc *\cu*
 
-techmap -map +/techmap.v -map +/gowin/arith_map.v *lu*;;
-abc -lut 4:8 *lu*;;
-
-alumacc *cu*
-abc -lut 4 *cu*;;
+share -aggressive *\shifter*;
+opt -fine -full *\shifter*;;
 
 flatten *alu*
 
-opt -fine -full decoder
-techmap -map +/techmap.v -map +/gowin/arith_map.v *decoder*;;
-abc -lut 8 decoder
-
-share -aggressive;;
+flatten;;
+opt -fast;;
+memory -nomap;;
 opt -fine -full;;
-memory -nomap ram;;
-share -aggressive
-opt -fine -full
-opt_clean -purge;;
+share -aggressive;;
 
-wreduce;;
-opt_clean -purge;;
-
-synth_gowin -nobram
 techmap -map rom.v -autoproc
-synth_gowin
+synth_gowin -nobram -abc9
 
 write_json myrv.json
