@@ -22,7 +22,7 @@ module alu #(
 );
 
 wire [WIDTH-1:0] lu_out;
-reg [2*WIDTH-2:0] shifter;
+wire [31:0] shifter_out;
 reg ignore;
 
 au #(.WIDTH(WIDTH)) au(
@@ -53,10 +53,17 @@ cu #(.WIDTH(WIDTH)) cu(
   .out(comparison_out)
 );
 
-always @* begin
-  shifter = {{WIDTH{logic_alt & ra[WIDTH-1]}}, ra} << (funct3[2] ? ~rb[$clog2(WIDTH)-1:0] : rb[$clog2(WIDTH)-1:0]);
+shifter shifter(
+  .ra(ra),
+  .rb(rb),
 
-  logic_out = funct3[1:0] == 1 ? (funct3[2] ? shifter[2*WIDTH-2:WIDTH-1] : shifter[WIDTH-1:0]) : lu_out;
+  .logic_alt(logic_alt),
+  .funct3(funct3),
+  .out(shifter_out)
+);
+
+always @* begin
+  logic_out = funct3[1:0] == 1 ? shifter_out : lu_out;
 end
 
 endmodule

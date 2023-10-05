@@ -1,5 +1,5 @@
 read_verilog -specify -lib +/gowin/cells_sim.v
-read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v ram.v uart.v top.v rom_sim.v
+read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v ram.v uart.v top.v shifter.v rom_sim.v
 
 hierarchy -top top
 

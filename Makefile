@@ -1,9 +1,9 @@
-myrv.json: firmware au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v rom.v ram.v uart.v top.v build.ys rom_sim.v
+myrv.json: firmware au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v rom.v ram.v uart.v top.v build.ys rom_sim.v shifter.v
 	yosys -l meow.log build.ys
 	# yosys -p "read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v rom.v ram.v uart.v top.v; proc; synth_gowin -json myrv.json";
 
 pnrmyrv.json: myrv.json tangnano9k.cst
-	nextpnr-gowin --json $< --write $@ --device GW1NR-LV9QN88PC6/I5 --family GW1N-9C --cst tangnano9k.cst --router router2 --freq 36 --placer-heap-timingweight 30 --placer-heap-alpha 0.2 --placer-heap-beta 0.8 --tmg-ripup
+	nextpnr-gowin --json $< --write $@ --device GW1NR-LV9QN88PC6/I5 --family GW1N-9C --cst tangnano9k.cst --router router2 --freq 48 --tmg-ripup
 
 himbaechel-pnrmyrv.json: myrv.json tangnano9k.cst
 	nextpnr-himbaechel --json $< --write $@ --device GW1NR-LV9QN88PC6/I5 --vopt family=GW1N-9C --vopt cst=tangnano9k.cst --router router2 --placer-heap-timingweight 30
@@ -29,8 +29,8 @@ count.bin: count.elf
 firmware: count.bin
 	{ echo @00000000 ; { hexdump -v -e '1/1 "%02x "' count.bin; yes '00 ' | tr -d '\n'; } | head -c 768; } > firmware
 
-furv.cpp: count.bin au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v
-	yosys -q -l cxxrtl.log -p "read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v; hierarchy -top furv;; proc;; splitnets w:*EN* ;; flatten;; opt;; wreduce;; opt -fine -full;; wreduce;; opt_clean -purge;; write_cxxrtl furv.cpp"
+furv.cpp: count.bin au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v shifter.v
+	yosys -q -l cxxrtl.log -p "read_verilog au.v lu.v cu.v shifter.v alu.v decoder.v immdecoder.v furv.v; hierarchy -top furv;; proc;; splitnets w:*EN* ;; flatten;; opt;; wreduce;; opt -fine -full;; wreduce;; opt_clean -purge;; write_cxxrtl furv.cpp"
 
 sim: sim.cpp furv.cpp
 	g++ -O3 -std=c++14 -I `yosys-config --datdir`/include sim.cpp -o sim
