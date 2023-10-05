@@ -10,6 +10,8 @@ module decoder(
 
   output mem,
   output mem_write,
+  output [1:0] mem_width,
+  output mem_unsigned,
 
   output branch,
   output jal,
@@ -28,7 +30,7 @@ wire compute = {instruction[6], instruction[4], instruction[2]} == 4'b010; // 0x
 assign funct3 = instruction[14:12];
 wire lui = {instruction[6:4], instruction[2]} == 4'b0111;
 
-assign ra = !lui ? instruction[19:15] : 0;
+assign ra = !lui ? instruction[19:15] : 5'b0;
 assign rb = instruction[24:20];
 assign rd = instruction[11:7];
 
@@ -37,6 +39,8 @@ assign sel_rb_imm = !r;
 
 assign mem = {instruction[6], instruction[4]} == 4'b0; // 0x0xx11
 assign mem_write = instruction[5];
+assign mem_width = funct3[1:0];
+assign mem_unsigned = funct3[2];
 
 assign branch = instruction[6:4] == 3'b110; // 110xx11
 assign jal = instruction[2];

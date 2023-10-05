@@ -13,7 +13,8 @@ wire [31:0] instruction;
 
 wire [31:0] data_in = ram_select ? ram_out : uart_rx_select ? {24'b0, uart_rx_data} : 0;
 wire [31:0] data_out;
-wire [31:0] addr;
+wire [29:0] addr;
+wire [3:0] sel;
 
 wire [31:0] ram_out;
 
@@ -29,10 +30,10 @@ wire tx_ack;
 wire [7:0] uart_rx_data;
 wire uart_rx_ack;
 
-wire ram_select = 2048 <= addr && addr < 2048 + 1024;
-wire led_select = addr == 1024;
-wire uart_tx_select = addr == 1028;
-wire uart_rx_select = addr == 1032;
+wire ram_select = 2048 <= {addr, 2'b00} && {addr, 2'b00} < 2048 + 1024;
+wire led_select = {addr, 2'b00} == 1024;
+wire uart_tx_select = {addr, 2'b00} == 1028;
+wire uart_rx_select = {addr, 2'b00} == 1032;
 
 wire sysclk = pll_out & lock;
 wire pll_out;
@@ -63,7 +64,7 @@ uart #(.CLOCKS_PER_BIT(104), .TX_FIFO(16), .RX_FIFO(16)) uart(
 );
 
 ram ram(
-    .addr(addr[9:2]),
+    .addr(addr[7:0]),
 
     .data_in(data_out),
     .data_out(ram_out),
@@ -72,6 +73,7 @@ ram ram(
 
     .mem_en(mem_en && ram_select),
     .mem_write(mem_write),
+    .sel(sel),
 
     .clk(sysclk)
 );
@@ -88,6 +90,7 @@ furv furv(
     .data_in(data_in),
     .data_out(data_out),
     .addr(addr),
+    .sel(sel),
     .mem_write(mem_write),
     .mem(mem_en),
     .read_ack(read_ack),

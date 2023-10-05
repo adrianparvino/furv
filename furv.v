@@ -4,7 +4,8 @@ module furv(
 
     input [31:0] data_in,
     output reg [31:0] data_out = 0,
-    output reg [31:0] addr = 0,
+    output reg [29:0] addr = 0,
+    output reg [3:0] sel = 0,
     output reg mem = 0,
     output reg mem_write = 0,
     input read_ack,
@@ -42,6 +43,8 @@ wire sel_rb_imm;
 
 wire decoder_mem;
 wire decoder_mem_write;
+wire [1:0] decoder_mem_width;
+wire decoder_mem_unsigned;
 
 wire branch;
 wire jal;
@@ -85,6 +88,8 @@ decoder decoder(
 
   .mem(decoder_mem),
   .mem_write(decoder_mem_write),
+  .mem_width(decoder_mem_width),
+  .mem_unsigned(decoder_mem_unsigned),
 
   .branch(branch),
   .jal(jal),
@@ -100,6 +105,7 @@ decoder decoder(
 
 wire branch_taken = branch && (jal || comparison_out);
 wire [31:0] adjacent_pc = pc + 4;
+wire [1:0] byte_addr = arith_out[1:0];
 
 always @(negedge clk) begin
   // $display("PC=%x SRP=%x SRI=%x IMM=%x AO=%x PIM=%x A5=%x S0=%x", pc, sel_ra_pc, sel_rb_imm, imm, arith_out, pc + imm, r[15], r[8]);
@@ -114,7 +120,11 @@ always @(negedge clk) begin
         r[rd] <= adjacent_pc;
       end else if (decoder_mem && !decoder_mem_write) begin
       // $display("DIN=%x", data_in);
-        r[rd] <= data_in;
+        case (decoder_mem_width)
+        0: r[rd] <= ({data_in[8*byte_addr+:8], 24'h0} >> 24) & (decoder_mem_unsigned ? 32'hff : 32'hffffffff);
+        1: r[rd] <= ({data_in[8*byte_addr+:16], 16'h0} >> 16) & (decoder_mem_unsigned ? 32'hffff : 32'hffffffff);
+        2: r[rd] <= data_in;
+        endcase
       end else if (u) begin
         r[rd] <= arith_out;
       end else begin
@@ -139,13 +149,17 @@ always @(negedge clk) begin
     // Stall condition
 
     mem <= decoder_mem;
-    mem_write <= decoder_mem_write;
-    addr <= arith_out;
-
-    if (decoder_mem && decoder_mem_write) begin
-      data_out <= r[rb];
-    end
   end
+
+  mem_write <= decoder_mem_write;
+  addr <= arith_out[31:2];
+  data_out <= r[rb] << 8*byte_addr;
+
+  case (decoder_mem_width)
+  0: sel <= 4'b0001 << byte_addr;
+  1: sel <= 4'b0011 << byte_addr;
+  2: sel <= 4'b1111;
+  endcase
 end
 
 endmodule
