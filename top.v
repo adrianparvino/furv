@@ -1,7 +1,7 @@
 (* top *)
 module top(
     input clk,
-    output reg [5:0] led = ~6'b0,
+    output [5:0] leds,
     output uart_tx,
     input uart_rx,
 
@@ -11,29 +11,31 @@ module top(
 wire [31:0] pc;
 wire [31:0] instruction;
 
-wire [31:0] data_in = ram_select ? ram_out : uart_rx_select ? {24'b0, uart_rx_data} : 0;
+wire [31:0] data_in = ram_stb ? ram_out : uart_rx_stb ? {24'b0, uart_rx_data} : 0;
 wire [31:0] data_out;
 wire [29:0] addr;
 wire [3:0] sel;
 
 wire [31:0] ram_out;
 
-wire mem_en;
-wire mem_write;
-wire read_ack = ram_select ? ram_read_ack : uart_rx_select ? uart_rx_ack : 0;
-wire ram_read_ack;
+wire we;
+wire ack = uart_rx_ack | uart_tx_ack | ram_ack | led_ack;
+wire uart_rx_ack;
+wire uart_tx_ack;
+wire ram_ack;
+wire led_ack;
+
+wire cyc;
 
 wire tx_available;
 wire [7:0] tx_data;
-wire tx_ack;
 
 wire [7:0] uart_rx_data;
-wire uart_rx_ack;
 
-wire ram_select = 2048 <= {addr, 2'b00} && {addr, 2'b00} < 2048 + 1024;
-wire led_select = {addr, 2'b00} == 1024;
-wire uart_tx_select = {addr, 2'b00} == 1028;
-wire uart_rx_select = {addr, 2'b00} == 1032;
+wire ram_stb = 2048 <= {addr, 2'b00} && {addr, 2'b00} < 2048 + 1024;
+wire led_stb = {addr, 2'b00} == 1024;
+wire uart_tx_stb = {addr, 2'b00} == 1028;
+wire uart_rx_stb = {addr, 2'b00} == 1032;
 
 wire sysclk = pll_out & lock;
 wire pll_out;
@@ -54,28 +56,36 @@ uart #(.CLOCKS_PER_BIT(104), .TX_FIFO(16), .RX_FIFO(16)) uart(
     .uart_tx(uart_tx),
     .uart_rx(uart_rx),
 
-    .tx_available(mem_en && mem_write && uart_tx_select),
+    .tx_available(cyc && we && uart_tx_stb),
     .tx_data(data_out[7:0]),
-    .tx_ack(tx_ack),
+    .tx_ack(uart_tx_ack),
 
     .rx_data(uart_rx_data),
-    .rx_pop(mem_en && !mem_write && uart_rx_select),
+    .rx_pop(cyc && !we && uart_rx_stb),
     .rx_ack(uart_rx_ack)
 );
 
 ram ram(
+    .clk(sysclk),
     .addr(addr[7:0]),
-
     .data_in(data_out),
     .data_out(ram_out),
-
-    .ack(ram_read_ack),
-
-    .mem_en(mem_en && ram_select),
-    .mem_write(mem_write),
+    .we(we),
     .sel(sel),
+    .stb(ram_stb),
+    .ack(ram_ack),
+    .cyc(cyc)
+);
 
-    .clk(sysclk)
+led led(
+    .clk(sysclk),
+    .data_in(data_out),
+    .we(we),
+    .stb(led_stb),
+    .ack(led_ack),
+    .cyc(cyc),
+
+    .leds(leds)
 );
 
 rom rom(
@@ -91,19 +101,11 @@ furv furv(
     .data_out(data_out),
     .addr(addr),
     .sel(sel),
-    .mem_write(mem_write),
-    .mem(mem_en),
-    .read_ack(read_ack),
+    .mem_write(we),
+    .mem(cyc),
+    .ack(ack),
     .clk(sysclk)
 );
 
-always @(posedge sysclk) begin
-    if (mem_en && mem_write && led_select) begin
-        led[5:0] <= ~data_out[5:0];
-    end
-
-    // led[5] <= pc[7:2] != 21;
-    // led[5:0] <= ~pc[7:2];
-end
 
 endmodule

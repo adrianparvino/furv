@@ -11,9 +11,9 @@ module uart#(
     input [7:0] tx_data,
     output tx_ack,
 
-    output reg [7:0] rx_data,
+    output [7:0] rx_data,
     input rx_pop,
-    output reg rx_ack = 0
+    output rx_ack
 );
 
 localparam HALF_CLOCKS_PER_BIT = CLOCKS_PER_BIT/2;
@@ -28,10 +28,13 @@ wire [$clog2(CLOCKS_PER_BIT)-1:0] tx_next = tx_divider + 1;
 
 reg [3:0] tx_state = 14;
 
+wire tx_full = (tx_read_i ^ tx_write_i) == TX_FIFO;
 wire tx_sample = tx_next == CLOCKS_PER_BIT;
 
+assign tx_ack = tx_available && !tx_full;
+
 always @(posedge clk) begin
-  if ((tx_read_i ^ tx_write_i) != TX_FIFO && tx_available) begin
+  if (tx_ack) begin
     tx_shift_registers[tx_write_i[$clog2(TX_FIFO)-1:0]] <= tx_data;
     tx_write_i <= tx_write_i + 1;
   end
@@ -76,15 +79,14 @@ reg [3:0] rx_state = 9;
 wire rx_empty = rx_read_i == rx_write_i;
 wire rx_full = (rx_read_i ^ rx_write_i) == RX_FIFO;
 
+assign rx_data = rx_shift_registers[rx_read_i[$clog2(RX_FIFO)-1:0]];
+assign rx_ack = rx_pop && !rx_empty;
+
 always @(posedge clk) begin
-  if (rx_pop && !rx_empty) begin
-    rx_data <= rx_shift_registers[rx_read_i[$clog2(RX_FIFO)-1:0]];
+  if (rx_ack) begin
     rx_read_i <= rx_read_i + 1;
-    rx_ack <= 1;
-  end else begin
-    rx_ack <= 0;
   end
-end  
+end
 
 always @(posedge clk) begin
   if (rx_state == 9) begin

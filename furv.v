@@ -8,7 +8,7 @@ module furv(
     output reg [3:0] sel = 0,
     output reg mem = 0,
     output reg mem_write = 0,
-    input read_ack,
+    input ack,
 
     input clk
 );
@@ -107,12 +107,24 @@ wire branch_taken = branch && (jal || comparison_out);
 wire [31:0] adjacent_pc = pc + 4;
 wire [1:0] byte_addr = arith_out[1:0];
 
-always @(negedge clk) begin
+always @* begin
+  mem = decoder_mem;
+  mem_write = decoder_mem_write;
+  addr = arith_out[31:2];
+  data_out = r[rb] << 8*byte_addr;
+
+  case (decoder_mem_width)
+  0: sel = 4'b0001 << byte_addr;
+  1: sel = 4'b0011 << byte_addr;
+  2: sel = 4'b1111;
+  3: sel = 4'b1111;
+  endcase
+end
+
+always @(posedge clk) begin
   // $display("PC=%x SRP=%x SRI=%x IMM=%x AO=%x PIM=%x A5=%x S0=%x", pc, sel_ra_pc, sel_rb_imm, imm, arith_out, pc + imm, r[15], r[8]);
   // $display("PC=%x A4=%x A5=%x JAL=%b CO=%b", pc, r[14], r[15], jal, comparison_out);
-  if ((decoder_mem == mem) && (!(decoder_mem && !decoder_mem_write) || read_ack)) begin
-    mem <= 0;
-
+  if (!decoder_mem || ack) begin
     if (rd != 0) begin
       if ((branch && !jal) || (decoder_mem && decoder_mem_write)) begin
         // Nothing
@@ -145,21 +157,7 @@ always @(negedge clk) begin
     end
 
     pc <= branch_taken ? arith_out : adjacent_pc;
-  end else begin
-    // Stall condition
-
-    mem <= decoder_mem;
   end
-
-  mem_write <= decoder_mem_write;
-  addr <= arith_out[31:2];
-  data_out <= r[rb] << 8*byte_addr;
-
-  case (decoder_mem_width)
-  0: sel <= 4'b0001 << byte_addr;
-  1: sel <= 4'b0011 << byte_addr;
-  2: sel <= 4'b1111;
-  endcase
 end
 
 endmodule
