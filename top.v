@@ -43,11 +43,11 @@ wire lock;
 rPLL #( // For GW1NR-9 C6/I5
   .FCLKIN("27"),
   .IDIV_SEL(8), // -> PFD = 3 MHz (range: 3-400 MHz)
-  .FBDIV_SEL(3), // -> CLKOUT = 12 MHz (range: 3.125-500 MHz)
-  .ODIV_SEL(48) // -> VCO = 576 MHz (range: 400-1000 MHz)
+  .FBDIV_SEL(7), // -> CLKOUT = 24 MHz (range: 3.125-500 MHz)
+  .ODIV_SEL(32) // -> VCO = 768 MHz (range: 400-1000 MHz)
 ) pll (.CLKOUTP(), .CLKOUTD(), .CLKOUTD3(), .RESET(1'b0), .RESET_P(1'b0), .CLKFB(1'b0), .FBDSEL(6'b0), .IDSEL(6'b0), .ODSEL(6'b0), .PSDA(4'b0), .DUTYDA(4'b0), .FDLY(4'b0),
   .CLKIN(clk), // 27 MHz
-  .CLKOUT(pll_out), // 12 MHz
+  .CLKOUT(pll_out), // 24 MHz
   .LOCK(lock)
 );
 

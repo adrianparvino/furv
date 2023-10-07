@@ -3,7 +3,7 @@ myrv.json: firmware au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v rom.v ram
 	# yosys -p "read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v rom.v ram.v uart.v top.v; proc; synth_gowin -json myrv.json";
 
 pnrmyrv.json: myrv.json tangnano9k.cst
-	nextpnr-gowin --json $< --write $@ --device GW1NR-LV9QN88PC6/I5 --family GW1N-9C --cst tangnano9k.cst --router router2 --freq 48 --tmg-ripup
+	nextpnr-gowin --json $< --write $@ --device GW1NR-LV9QN88PC6/I5 --family GW1N-9C --cst tangnano9k.cst --router router2 --freq 24 --tmg-ripup
 
 himbaechel-pnrmyrv.json: myrv.json tangnano9k.cst
 	nextpnr-himbaechel --json $< --write $@ --device GW1NR-LV9QN88PC6/I5 --vopt family=GW1N-9C --vopt cst=tangnano9k.cst --router router2 --placer-heap-timingweight 30
