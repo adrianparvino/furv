@@ -133,8 +133,8 @@ always @(posedge clk) begin
       end else if (decoder_mem && !decoder_mem_write) begin
       // $display("DIN=%x", data_in);
         case (decoder_mem_width)
-        0: r[rd] <= ({data_in[8*byte_addr+:8], 24'h0} >> 24) & (decoder_mem_unsigned ? 32'hff : 32'hffffffff);
-        1: r[rd] <= ({data_in[8*byte_addr+:16], 16'h0} >> 16) & (decoder_mem_unsigned ? 32'hffff : 32'hffffffff);
+        0: r[rd] <= decoder_mem_unsigned ? {24'b0, data_in[8*byte_addr+:8]} : $signed(data_in[8*byte_addr+:8]);
+        1: r[rd] <= decoder_mem_unsigned ? {16'b0, data_in[8*byte_addr+:16]} : $signed(data_in[8*byte_addr+:16]);
         2: r[rd] <= data_in;
         endcase
       end else if (u) begin
