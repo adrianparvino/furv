@@ -1,4 +1,4 @@
-read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v ram.v uart.v shifter.v rom_sim.v top.v
+read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v ram.v uart.v shifter.v rom_sim.v led.v top.v
 
 hierarchy -top top;;
 
@@ -16,10 +16,9 @@ opt -fine -full *\shifter*;;
 flatten *alu*
 
 flatten;;
-opt -fast;;
+
 memory -nomap;;
 opt -fine -full;;
-share -aggressive;;
 
 techmap -map rom.v -autoproc
 synth_gowin -nobram -abc9
