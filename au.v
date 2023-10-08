@@ -15,14 +15,15 @@ always @* begin
   case (mode)
     0: begin
       out = ra + rb;
-      unsigned_compare = 0;
+      unsigned_compare = 'x;
+      signed_compare = 'x;
     end
     1: begin
       out = ra - rb;
       unsigned_compare = ra < rb;
+      signed_compare = $signed(ra) < $signed(rb);
     end
   endcase
-  signed_compare = (ra[WIDTH - 1] && !rb[WIDTH - 1]) || ((ra[WIDTH - 1] == rb[WIDTH - 1]) && out[WIDTH - 1]);
 end
 
 endmodule

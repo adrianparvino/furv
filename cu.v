@@ -11,11 +11,8 @@ module cu #(
   output reg out = 0
 );
 
-wire [WIDTH-1:0] ra_ = {!unsigned_comparison ^ ra[WIDTH-1], ra[WIDTH-2:0]};
-wire [WIDTH-1:0] rb_ = {!unsigned_comparison ^ rb[WIDTH-1], rb[WIDTH-2:0]};
-
-wire lt_result = ra_ < rb_;
-wire eq_result = ~|(ra_ - rb_);
+wire lt_result = unsigned_comparison ? ra < rb : $signed(ra) < $signed(rb);
+wire eq_result = ra == rb;
 
 always @* begin
   out = invert ^ (lt ? lt_result : eq_result);
