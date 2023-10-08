@@ -92,6 +92,7 @@ int main()
       }
     }
 
+    top.step();
     // std::cout << "INSTRUCTION: " << std::setfill('0') << std::setw(8) << std::hex << top.p_instruction.get<uint32_t>() << " ";
     // std::cout << "RA: " << top.memory_p_r[1].get<uint32_t>() << " ";
     // std::cout << "R[1] (RA): " << std::hex << top.memory_p_r[1].get<uint32_t>() << " ";

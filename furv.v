@@ -106,12 +106,24 @@ decoder decoder(
 wire branch_taken = branch && (jal || comparison_out);
 wire [31:0] adjacent_pc = pc + 4;
 wire [1:0] byte_addr = arith_out[1:0];
+reg [31:0] data_in_;
+reg [15:0] lword_out;
+reg [15:0] lword_in;
 
 always @* begin
   mem = decoder_mem;
   mem_write = decoder_mem_write;
   addr = arith_out[31:2];
-  data_out = r[rb] << 8*byte_addr;
+
+  lword_out[7:0] = r[rb][7:0];
+  lword_out[15:8] = byte_addr[0] ? r[rb][7:0] : r[rb][15:8];
+  data_out[15:0] = lword_out;
+  data_out[31:16] = byte_addr[1] ? lword_out : r[rb][31:16];
+
+  lword_in = byte_addr[1] ? data_in[31:16] : data_in[15:0];
+  data_in_[31:16] = data_in[31:16];
+  data_in_[15:8] = lword_in[15:8];
+  data_in_[7:0] = byte_addr[0] ? lword_in[15:8] : lword_in[7:0];
 
   case (decoder_mem_width)
   0: sel = 4'b0001 << byte_addr;
@@ -133,8 +145,8 @@ always @(posedge clk) begin
       end else if (decoder_mem && !decoder_mem_write) begin
       // $display("DIN=%x", data_in);
         case (decoder_mem_width)
-        0: r[rd] <= decoder_mem_unsigned ? {24'b0, data_in[8*byte_addr+:8]} : $signed(data_in[8*byte_addr+:8]);
-        1: r[rd] <= decoder_mem_unsigned ? {16'b0, data_in[8*byte_addr+:16]} : $signed(data_in[8*byte_addr+:16]);
+        0: r[rd] <= decoder_mem_unsigned ? {24'b0, data_in_[7:0]} : $signed(data_in_[7:0]);
+        1: r[rd] <= decoder_mem_unsigned ? {16'b0, data_in_[15:0]} : $signed(data_in_[15:0]);
         2: r[rd] <= data_in;
         endcase
       end else if (u) begin
