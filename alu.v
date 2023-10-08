@@ -53,7 +53,7 @@ cu #(.WIDTH(WIDTH)) cu(
   .out(comparison_out)
 );
 
-shifter shifter(
+shifter #(.WIDTH(WIDTH)) shifter(
   .ra(ra),
   .rb(rb),
 
