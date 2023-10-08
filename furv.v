@@ -125,12 +125,10 @@ always @* begin
   data_in_[15:8] = lword_in[15:8];
   data_in_[7:0] = byte_addr[0] ? lword_in[15:8] : lword_in[7:0];
 
-  case (decoder_mem_width)
-  0: sel = 4'b0001 << byte_addr;
-  1: sel = 4'b0011 << byte_addr;
-  2: sel = 4'b1111;
-  3: sel = 4'b1111;
-  endcase
+  sel[0] = decoder_mem_width == 2 || byte_addr == 0;
+  sel[1] = decoder_mem_width == 2 || (decoder_mem_width == 1 && byte_addr == 0) || byte_addr == 1;
+  sel[2] = decoder_mem_width == 2 || byte_addr == 2;
+  sel[3] = decoder_mem_width == 2 || (decoder_mem_width == 1 && byte_addr == 2) || byte_addr == 3;
 end
 
 always @(posedge clk) begin
