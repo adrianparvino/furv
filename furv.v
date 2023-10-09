@@ -55,7 +55,7 @@ immdecoder immdecoder(
   .imm(imm)
 );
 
-alu #(.WIDTH(32)) alu(
+alu alu(
   .ra(sel_ra_pc ? pc : r[ra]),
   .rb(sel_rb_imm ? imm : r[rb]),
   .rca(r[ra]),

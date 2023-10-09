@@ -1,8 +1,6 @@
-module cu #(
-  parameter WIDTH = 32
-) (
-  input [WIDTH-1:0] ra,
-  input [WIDTH-1:0] rb,
+module cu (
+  input [31:0] ra,
+  input [31:0] rb,
 
   input lt,
   input invert,

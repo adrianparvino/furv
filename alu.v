@@ -1,10 +1,8 @@
-module alu #(
-  parameter WIDTH = 32
-) (
-  input [WIDTH-1:0] ra,
-  input [WIDTH-1:0] rb,
-  input [WIDTH-1:0] rca,
-  input [WIDTH-1:0] rcb,
+module alu (
+  input [31:0] ra,
+  input [31:0] rb,
+  input [31:0] rca,
+  input [31:0] rcb,
 
   input arith_mode,
   input logic_alt,
@@ -16,16 +14,16 @@ module alu #(
   output arith_unsigned_compare,
   output arith_signed_compare,
 
-  output [WIDTH-1:0] arith_out,
-  output reg [WIDTH-1:0] logic_out = 0,
+  output [31:0] arith_out,
+  output reg [31:0] logic_out = 0,
   output comparison_out
 );
 
-wire [WIDTH-1:0] lu_out;
+wire [31:0] lu_out;
 wire [31:0] shifter_out;
 reg ignore;
 
-au #(.WIDTH(WIDTH)) au(
+au au(
   .ra(ra),
   .rb(rb),
   .mode(arith_mode),
@@ -34,7 +32,7 @@ au #(.WIDTH(WIDTH)) au(
   .signed_compare(arith_signed_compare)
 );
 
-lu #(.WIDTH(WIDTH)) lu(
+lu lu(
   .ra(ra),
   .rb(rb),
   .alt(logic_alt),
@@ -42,7 +40,7 @@ lu #(.WIDTH(WIDTH)) lu(
   .out(lu_out)
 );
 
-cu #(.WIDTH(WIDTH)) cu(
+cu cu(
   .ra(rca),
   .rb(rcb),
 
@@ -53,7 +51,7 @@ cu #(.WIDTH(WIDTH)) cu(
   .out(comparison_out)
 );
 
-shifter #(.WIDTH(WIDTH)) shifter(
+shifter shifter(
   .ra(ra),
   .rb(rb),
 
