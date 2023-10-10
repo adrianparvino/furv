@@ -31,55 +31,55 @@ genvar j;
 wire [31:0] shift1;
 generate
   for (j = 0; j < 32 - 1; j = j + 1) begin
-    LUT3 #(.INIT(8'b11001010)) A(.F(shift1[j]), .I0(ra_[j]), .I1(ra_[j + 1]), .I2(rb[0]));
+    LUT3 #(.INIT(8'b11011000)) A(.F(shift1[j]), .I0(rb[0]), .I1(ra_[j + 1]), .I2(ra_[j]));
   end
 
   for (j = 32 - 1; j < 32; j = j + 1) begin
-    LUT3 #(.INIT(8'b11001010)) A(.F(shift1[j]), .I0(ra_[j]), .I1(logic_alt & ra_[32-1]), .I2(rb[0]));
+    LUT4 #(.INIT(16'b1000111110000000)) A(.F(shift1[j]), .I0(logic_alt), .I1(ra_[32 - 1]), .I2(rb[0]), .I3(ra_[j]));
   end
 endgenerate
 
 wire [31:0] shift2;
 generate
   for (j = 0; j < 32 - 2; j = j + 1) begin
-    LUT3 #(.INIT(8'b11001010)) A(.F(shift2[j]), .I0(shift1[j]), .I1(shift1[j + 2]), .I2(rb[1]));
+    LUT3 #(.INIT(8'b11011000)) A(.F(shift2[j]), .I0(rb[1]), .I1(shift1[j + 2]), .I2(shift1[j]));
   end
 
   for (j = 32 - 2; j < 32; j = j + 1) begin
-    LUT3 #(.INIT(8'b11001010)) A(.F(shift2[j]), .I0(shift1[j]), .I1(logic_alt & ra_[32-1]), .I2(rb[1]));
+    LUT4 #(.INIT(16'b1000111110000000)) A(.F(shift2[j]), .I0(logic_alt), .I1(ra_[32 - 1]), .I2(rb[1]), .I3(shift1[j]));
   end
 endgenerate
 
 wire [31:0] shift4;
 generate
   for (j = 0; j < 32 - 4; j = j + 1) begin
-    LUT3 #(.INIT(8'b11001010)) A(.F(shift4[j]), .I0(shift2[j]), .I1(shift2[j + 4]), .I2(rb[2]));
+    LUT3 #(.INIT(8'b11011000)) A(.F(shift4[j]), .I0(rb[2]), .I1(shift2[j + 4]), .I2(shift2[j]));
   end
 
   for (j = 32 - 4; j < 32; j = j + 1) begin
-    LUT3 #(.INIT(8'b11001010)) A(.F(shift4[j]), .I0(shift2[j]), .I1(logic_alt & ra_[32-1]), .I2(rb[2]));
+    LUT4 #(.INIT(16'b1000111110000000)) A(.F(shift4[j]), .I0(logic_alt), .I1(ra_[32 - 1]), .I2(rb[2]), .I3(shift2[j]));
   end
 endgenerate
 
 wire [31:0] shift8;
 generate
   for (j = 0; j < 32 - 8; j = j + 1) begin
-    LUT3 #(.INIT(8'b11001010)) A(.F(shift8[j]), .I0(shift4[j]), .I1(shift4[j + 8]), .I2(rb[3]));
+    LUT3 #(.INIT(8'b11011000)) A(.F(shift8[j]), .I0(rb[3]), .I1(shift4[j + 8]), .I2(shift4[j]));
   end
 
   for (j = 32 - 8; j < 32; j = j + 1) begin
-    LUT3 #(.INIT(8'b11001010)) A(.F(shift8[j]), .I0(shift4[j]), .I1(logic_alt & ra_[32-1]), .I2(rb[3]));
+    LUT4 #(.INIT(16'b1000111110000000)) A(.F(shift8[j]), .I0(logic_alt), .I1(ra_[32 - 1]), .I2(rb[3]), .I3(shift4[j]));
   end
 endgenerate
 
 wire [31:0] shift16;
 generate
   for (j = 0; j < 32 - 16; j = j + 1) begin
-    LUT3 #(.INIT(8'b11001010)) A(.F(shift16[j]), .I0(shift8[j]), .I1(shift8[j + 16]), .I2(rb[4]));
+    LUT3 #(.INIT(8'b11011000)) A(.F(shift16[j]), .I0(rb[4]), .I1(shift8[j + 16]), .I2(shift8[j]));
   end
 
   for (j = 32 - 16; j < 32; j = j + 1) begin
-    LUT3 #(.INIT(8'b11001010)) A(.F(shift16[j]), .I0(shift8[j]), .I1(logic_alt & ra_[32-1]), .I2(rb[4]));
+    LUT4 #(.INIT(16'b1000111110000000)) A(.F(shift16[j]), .I0(logic_alt), .I1(ra_[32 - 1]), .I2(rb[4]), .I3(shift8[j]));
   end
 endgenerate
 
