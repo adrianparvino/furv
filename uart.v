@@ -47,14 +47,12 @@ always @(posedge clk) begin
   end
 end
 
-wire tx_muxed;
-_MUX8 TX_MUXED(.x(tx_shift_register), .sel(tx_index), .y(tx_muxed));
-
 always @(posedge clk) begin
   if (tx_sample) begin
     case (tx_state)
       UART_IDLE: begin
         uart_tx <= 1;
+
         if (!tx_empty) begin
           tx_state <= UART_START;
           tx_shift_register <= tx_shift_registers[tx_read_i[$clog2(TX_FIFO):0]];
@@ -63,11 +61,10 @@ always @(posedge clk) begin
       end
       UART_START: begin
         uart_tx <= 0;
-
         tx_state <= UART_RUNNING;
       end
       UART_RUNNING: begin
-        uart_tx <= tx_muxed;
+        uart_tx <= tx_shift_register[tx_index];
         tx_index <= tx_index + 1;
 
         if (tx_index == 7) tx_state <= UART_IDLE;
