@@ -4,8 +4,11 @@ module decoder(
   output [4:0] ra,
   output [4:0] rb,
   output [4:0] rd,
+  output [1:0] wb,
 
-  output sel_ra_pc,
+  output lui,
+  output jalr,
+
   output sel_rb_imm,
 
   output mem,
@@ -28,13 +31,15 @@ module decoder(
 wire r = {instruction[6:4], instruction[2]} == 4'b0110; // 011x011
 wire compute = {instruction[6], instruction[4], instruction[2]} == 4'b010; // 0x1x011
 assign funct3 = instruction[14:12];
-wire lui = {instruction[6:4], instruction[2]} == 4'b0111;
+assign lui = instruction[5];
+assign jalr = !instruction[3];
 
-assign ra = !lui ? instruction[19:15] : 5'b0;
+assign ra = instruction[19:15];
 assign rb = instruction[24:20];
-assign rd = instruction[11:7];
+assign rd = instruction[5:4] == 2'b10 && instruction[2] == 1'b0 ? 0 : instruction[11:7];
 
-assign sel_ra_pc = (instruction[6] && instruction[5] && (instruction[3] == instruction[2])) || (~instruction[6] && ~instruction[5] && (instruction[3] != instruction[2]));
+assign wb = {instruction[4], instruction[2]};
+
 assign sel_rb_imm = !r;
 
 assign mem = {instruction[6], instruction[4]} == 4'b0; // 0x0xx11

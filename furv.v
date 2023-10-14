@@ -21,6 +21,10 @@ initial for (i=0;i<32;i=i+1) r[i] = 32'b0;
 wire [4:0] ra;
 wire [4:0] rb;
 wire [4:0] rd;
+wire [1:0] wb;
+
+wire lui;
+wire jalr;
 
 wire arith_mode;
 wire logic_alt;
@@ -34,6 +38,7 @@ wire arith_signed_compare;
 
 wire [31:0] arith_out;
 wire [31:0] logic_out;
+wire [31:0] shifter_out;
 wire comparison_out;
 
 wire [31:0] imm;
@@ -56,24 +61,30 @@ immdecoder immdecoder(
 );
 
 alu alu(
-  .ra(sel_ra_pc ? pc : r[ra]),
+  .ra(r[ra]),
   .rb(sel_rb_imm ? imm : r[rb]),
-  .rca(r[ra]),
-  .rcb(r[rb]),
 
   .arith_mode(arith_mode),
   .logic_alt(logic_alt),
   .funct3(funct3),
-  .lt(lt),
-  .invert_comparison(invert_comparison),
-  .unsigned_comparison(unsigned_comparison),
 
   .arith_unsigned_compare(arith_unsigned_compare),
   .arith_signed_compare(arith_signed_compare),
 
   .arith_out(arith_out),
   .logic_out(logic_out),
-  .comparison_out(comparison_out)
+  .shifter_out(shifter_out),
+);
+
+cu cu(
+  .ra(r[ra]),
+  .rb(r[rb]),
+
+  .lt(lt),
+  .invert(invert_comparison),
+  .unsigned_comparison(unsigned_comparison),
+
+  .out(comparison_out)
 );
 
 decoder decoder(
@@ -82,6 +93,9 @@ decoder decoder(
   .ra(ra),
   .rb(rb),
   .rd(rd),
+  .wb(wb),
+  .lui(lui),
+  .jalr(jalr),
 
   .sel_ra_pc(sel_ra_pc),
   .sel_rb_imm(sel_rb_imm),
@@ -103,6 +117,8 @@ decoder decoder(
   .unsigned_comparison(unsigned_comparison)
 );
 
+reg [15:0] word_in = 0;
+reg [7:0] byte_in = 0;
 wire branch_taken = branch && (jal || comparison_out);
 wire [31:0] adjacent_pc = pc + 4;
 wire [1:0] byte_addr = arith_out[1:0];
@@ -117,9 +133,8 @@ always @* begin
   data_out[23:16] = byte_addr[1] ? r[rb][7:0] : r[rb][23:16];
   data_out[31:24] = byte_addr[1] ? (byte_addr[0] ? r[rb][7:0] : r[rb][15:8]) : (byte_addr[0] ? r[rb][23:16] : r[rb][31:24]);
 
-  data_in_[31:16] = data_in[31:16];
-  data_in_[15:8] = byte_addr[1] ? data_in[31:24] : data_in[15:8];
-  data_in_[7:0] = byte_addr[1] ? (byte_addr[0] ? data_in[31:24] : data_in[23:16]) : (byte_addr[0] ? data_in[15:8] : data_in[7:0]);
+  word_in = byte_addr[1] ? data_in[31:16] : data_in[15:0];
+  byte_in = byte_addr[1] ? (byte_addr[0] ? data_in[31:24] : data_in[23:16]) : (byte_addr[0] ? data_in[15:8] : data_in[7:0]);
 
   sel[0] = decoder_mem_width == 2 || byte_addr == 0;
   sel[1] = decoder_mem_width == 2 || (decoder_mem_width == 1 && byte_addr == 0) || byte_addr == 1;
@@ -132,37 +147,45 @@ always @(posedge clk) begin
   // $display("PC=%x A4=%x A5=%x JAL=%b CO=%b", pc, r[14], r[15], jal, comparison_out);
   if (!decoder_mem || ack) begin
     if (rd != 0) begin
-      if ((branch && !jal) || (decoder_mem && decoder_mem_write)) begin
-        // Nothing
-      end else if (branch && jal) begin
-        r[rd] <= adjacent_pc;
-      end else if (decoder_mem && !decoder_mem_write) begin
-      // $display("DIN=%x", data_in);
+      case (wb)
+      0: begin
         case (decoder_mem_width)
-        0: r[rd] <= decoder_mem_unsigned ? {24'b0, data_in_[7:0]} : $signed(data_in_[7:0]);
-        1: r[rd] <= decoder_mem_unsigned ? {16'b0, data_in_[15:0]} : $signed(data_in_[15:0]);
-        2: r[rd] <= data_in;
+        0: begin
+          r[rd][31:8] <= {24{!decoder_mem_unsigned & byte_in[7]}};
+          r[rd][7:0] <= byte_in;
+        end
+        1: begin
+          r[rd][31:16] <= {16{!decoder_mem_unsigned & word_in[15]}};
+          r[rd][15:0] <= word_in;
+        end
+        default: r[rd] <= data_in;
         endcase
-      end else if (u) begin
-        r[rd] <= arith_out;
-      end else begin
-        // if (pc == 32'h50) begin
-          // $display("%x %x %x", instruction, imm, funct3);
-        // end
+      end
+      1: begin
+        r[rd] <= adjacent_pc;
+      end
+      2: begin
         case (funct3)
         0: r[rd] <= arith_out;
-        1: r[rd] <= logic_out;
+        1: r[rd] <= shifter_out;
         2: r[rd] <= {31'b0, arith_signed_compare};
         3: r[rd] <= {31'b0, arith_unsigned_compare};
         4: r[rd] <= logic_out;
-        5: r[rd] <= logic_out;
+        5: r[rd] <= shifter_out;
         6: r[rd] <= logic_out;
         7: r[rd] <= logic_out;
         endcase
       end
+      3: begin
+        r[rd] <= lui ? imm : pc + imm;
+      end
+      endcase
     end
 
-    pc <= branch_taken ? arith_out : adjacent_pc;
+    case (branch_taken)
+    0: pc <= adjacent_pc;
+    1: pc <= jal && jalr ? r[ra] + imm : pc + imm;
+    endcase
   end
 end
 

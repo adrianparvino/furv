@@ -89,7 +89,7 @@ led led(
 );
 
 rom rom(
-    .pc(pc), 
+    .pc(pc),
     .instruction(instruction)
 );
 

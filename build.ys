@@ -1,28 +1,27 @@
 read_verilog -specify -lib +/gowin/cells_sim.v
 
-read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v ram.v uart.v shifter.v rom_sim.v led.v mux8.v top.v
+read_verilog uart.v au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v ram.v shifter.v rom_sim.v led.v top.v
 
-hierarchy -top top;;
+hierarchy -top top
 
-proc;;
+proc
 
-alumacc *\au*;;
-share -aggressive *\au*;;
-opt -full -fine *\au*;;
-
-alumacc *\cu*
-
-share -aggressive *\shifter*;
-opt -fine -full *\shifter*;;
-
-flatten *alu*
-
-flatten;;
-
-memory -nomap;;
-opt -fine -full;;
+flatten
+# pmux2shiftx -min_density 75;
+# opt -fast -mux_bool;
+# techmap t:$shiftx
+# muxcover -mux4 -mux8
+memory -nomap
+opt -fine -full
 
 techmap -map rom.v -autoproc
-synth_gowin -nobram -abc9
+synth_gowin -nobram -noflatten -abc9
+memory
+opt -fast
+techmap -map +/techmap.v
+opt -fine -full
+abc -lut 4:8
+techmap -map +/gowin/cells_map.v
 
+stat
 write_json myrv.json
