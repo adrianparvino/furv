@@ -36,13 +36,13 @@ assign jalr = !instruction[3];
 
 assign ra = instruction[19:15];
 assign rb = instruction[24:20];
-assign rd = instruction[5:4] == 2'b10 && instruction[2] == 1'b0 ? 0 : instruction[11:7];
+assign rd = (instruction[5:4] == 2'b10 && instruction[2] == 1'b0) ? 0 : instruction[11:7];
 
 assign wb = {instruction[4], instruction[2]};
 
 assign sel_rb_imm = !r;
 
-assign mem = {instruction[6], instruction[4]} == 4'b0; // 0x0xx11
+assign mem = {instruction[6], instruction[4]} == 2'b00; // 0x0xx11
 assign mem_write = instruction[5];
 assign mem_width = funct3[1:0];
 assign mem_unsigned = funct3[2];

@@ -6,20 +6,21 @@ hierarchy -top top
 
 proc
 
+alumacc
+share -aggressive
+
 flatten
-# pmux2shiftx -min_density 75;
-# opt -fast -mux_bool;
-# techmap t:$shiftx
-# muxcover -mux4 -mux8
+pmux2shiftx -min_density 75;
+opt -fast
+techmap t:$shiftx
+muxcover -mux4 -mux8
 memory -nomap
 opt -fine -full
 
+synth_gowin -nobram -abc9
 techmap -map rom.v -autoproc
-synth_gowin -nobram -noflatten -abc9
 memory
-opt -fast
 techmap -map +/techmap.v
-opt -fine -full
 abc -lut 4:8
 techmap -map +/gowin/cells_map.v
 

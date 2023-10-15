@@ -121,12 +121,12 @@ reg [15:0] word_in = 0;
 reg [7:0] byte_in = 0;
 wire branch_taken = branch && (jal || comparison_out);
 wire [31:0] adjacent_pc = pc + 4;
-wire [1:0] byte_addr = arith_out[1:0];
+reg [1:0] byte_addr;
 
 always @* begin
   mem = decoder_mem;
   mem_write = decoder_mem_write;
-  addr = arith_out[31:2];
+  {addr, byte_addr} = r[ra] + imm;
 
   data_out[7:0] = r[rb][7:0];
   data_out[15:8] = byte_addr[0] ? r[rb][7:0] : r[rb][15:8];
@@ -147,24 +147,22 @@ always @(posedge clk) begin
   // $display("PC=%x A4=%x A5=%x JAL=%b CO=%b", pc, r[14], r[15], jal, comparison_out);
   if (!decoder_mem || ack) begin
     if (rd != 0) begin
-      case (wb)
-      0: begin
-        case (decoder_mem_width)
-        0: begin
-          r[rd][31:8] <= {24{!decoder_mem_unsigned & byte_in[7]}};
-          r[rd][7:0] <= byte_in;
-        end
-        1: begin
-          r[rd][31:16] <= {16{!decoder_mem_unsigned & word_in[15]}};
-          r[rd][15:0] <= word_in;
-        end
-        default: r[rd] <= data_in;
-        endcase
+      casez ({decoder_mem_width, wb})
+      4'b0000: begin
+        r[rd][31:8] <= {24{!decoder_mem_unsigned & byte_in[7]}};
+        r[rd][7:0] <= byte_in;
       end
-      1: begin
+      4'b0100: begin
+        r[rd][31:16] <= {16{!decoder_mem_unsigned & word_in[15]}};
+        r[rd][15:0] <= word_in;
+      end
+      4'b1?00: begin 
+        r[rd] <= data_in;
+      end
+      4'b??01: begin
         r[rd] <= adjacent_pc;
       end
-      2: begin
+      4'b??10: begin
         case (funct3)
         0: r[rd] <= arith_out;
         1: r[rd] <= shifter_out;
@@ -176,7 +174,7 @@ always @(posedge clk) begin
         7: r[rd] <= logic_out;
         endcase
       end
-      3: begin
+      4'b??11: begin
         r[rd] <= lui ? imm : pc + imm;
       end
       endcase
@@ -184,7 +182,7 @@ always @(posedge clk) begin
 
     case (branch_taken)
     0: pc <= adjacent_pc;
-    1: pc <= jal && jalr ? r[ra] + imm : pc + imm;
+    1: pc <= (jal && jalr ? r[ra] : pc) + imm;
     endcase
   end
 end

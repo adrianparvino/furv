@@ -13,7 +13,7 @@ assign ack = cyc && stb && we;
 
 always @(posedge clk) begin
     if (ack) begin
-        leds <= ~data_in[5:0];
+        leds <= ~data_in[4:0];
     end
 end
 
