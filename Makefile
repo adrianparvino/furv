@@ -1,5 +1,5 @@
 myrv.json: firmware au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v rom.v ram.v uart.v top.v build.ys rom_sim.v shifter.v led.v
-	yosys -l meow.log build.ys
+	yosys -gl meow.log build.ys
 	# yosys -p "read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v rom.v ram.v uart.v top.v; proc; synth_gowin -json myrv.json";
 
 pnrmyrv.json: myrv.json tangnano9k.cst
@@ -30,10 +30,10 @@ firmware: count.bin
 	{ echo @00000000 ; { hexdump -v -e '1/1 "%02x "' count.bin; yes '00 ' | tr -d '\n'; } | head -c 768; } > firmware
 
 furv.cpp: count.bin au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v shifter.v
-	yosys -q -l cxxrtl.log -p 'read_verilog +/gowin/cells_sim.v au.v lu.v cu.v shifter.v alu.v decoder.v immdecoder.v furv.v; hierarchy -top furv;; proc;; memory -nomap;; opt -fine -full;; splitnets w:*EN* ;; flatten;; opt;; wreduce;; opt -fine -full;; wreduce;; opt_clean -purge;; write_cxxrtl furv.cpp'
+	yosys -q -l cxxrtl.log -p 'read_verilog -specify -lib +/gowin/cells_sim.v; read_verilog au.v lu.v cu.v shifter.v alu.v decoder.v immdecoder.v furv.v; hierarchy -top furv;; proc; flatten; pmux2shiftx -min_density 75; opt -fast -mux_bool; techmap t:$shiftx; memory -nomap; opt -fine -full; techmap -map +/gowin/cells_sim.v; write_cxxrtl furv.cpp'
 
 sim: sim.cpp furv.cpp
-	g++ -O3 -std=c++14 -I `yosys-config --datdir`/include sim.cpp -o sim
+	g++ -g -O3 -std=c++14 -I `yosys-config --datdir`/include sim.cpp -o sim
 
 .PHONY: clean
 
