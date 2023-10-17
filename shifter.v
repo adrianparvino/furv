@@ -3,7 +3,7 @@ module shifter (
   input [31:0] rb,
 
   input logic_alt,
-  input [2:0] funct3,
+  input shift_right,
   output reg [31:0] out
 );
 
@@ -13,13 +13,13 @@ wire [4:0] rb_ = rb;
 reg [31:0] ra_;
 
 always @* begin
-  if (funct3[2])
+  if (shift_right)
     ra_ = ra;
   else
     for(i=0;i<32;i=i+1)
         ra_[i] = ra[32-1-i];
 
-  if (funct3[2])
+  if (shift_right)
     out = shift16;
   else
     for(i=0;i<32;i=i+1)

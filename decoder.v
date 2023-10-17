@@ -40,7 +40,7 @@ assign rd = (instruction[5:4] == 2'b10 && instruction[2] == 1'b0) ? 0 : instruct
 
 assign wb = {instruction[4], instruction[2]};
 
-assign sel_rb_imm = !r;
+assign sel_rb_imm = !(instruction[5] && !instruction[2]);
 
 assign mem = {instruction[6], instruction[4]} == 2'b00; // 0x0xx11
 assign mem_write = instruction[5];

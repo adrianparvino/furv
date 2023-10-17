@@ -1,3 +1,5 @@
+#include<limits.h>
+
 static volatile int * led = (volatile int *) 1024;
 static volatile int * uart_tx = (volatile int *) 1028;
 static volatile int * uart_rx = (volatile int *) 1032;
@@ -13,17 +15,45 @@ static int fib(int n) {
 	return fib(n - 1) + fib(n - 2);
 }
 
+char chars[4] = { 0 };
+
 void main() {
-	int counter = 0;
+	int counter = 1;
 
-	int characters[7];
-	int i;
+	// *led = 1;
 
-	*led = 2;
+	// for (;;) {
+	// 	*led = counter;
+
+	// 	*uart_rx;
+
+	// 	counter <<= 1;
+	// }
+	// for (int j = ~0xf; j != -1; j >>= 1) {
+	// 	*led = j;
+	// 	*uart_tx = *uart_rx;
+	// }
+
+	// *led = 2;
+
+	// *led = 2 >> 1;
+
 	for (;;) {
-		*uart_tx = *uart_rx & ~0x20;
-		*led = ++counter;
+		*led = counter;
+		chars[counter++ % 4] = *uart_rx;
+
+		for (int i = 0; i < 4; ++i) {
+			if (chars[i % 4] == 'P') {
+				*uart_tx = 'P';
+			}
+		}
 	}
+
+	// *led = 2;
+	// for (;;) {
+	// 	*uart_tx = *uart_rx & ~0x20;
+	// 	*led = ++counter;
+	// }
 
 	// *led = 2;
 	// for (;;) {

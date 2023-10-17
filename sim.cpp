@@ -61,7 +61,7 @@ int main()
 
         ack = 1;
       } else if (2048 <= addr && addr < 2048 + 1024) {
-        // std::cout << "MEM STORE " << std::hex << addr << " " << std::hex << sel << std::endl;
+        std::cout << "MEM STORE " << std::hex << addr << " DATA: " << std::hex << data__out << " " << std::hex << sel << std::endl;
         if (sel & 1) ram[addr + 0 - 2048] = data__out;
         if (sel & 2) ram[addr + 1 - 2048] = data__out >> 8;
         if (sel & 4) ram[addr + 2 - 2048] = data__out >> 16;
@@ -83,7 +83,7 @@ int main()
           | (((uint32_t) ram[addr + 2 - 2048]) << 16)
           | (((uint32_t) ram[addr + 3 - 2048]) << 24);
 
-        // std::cout << "MEM READ " << std::hex << addr << " " << std::hex << ram_word << std::endl;
+        std::cout << "MEM READ " << std::hex << addr << " " << std::hex << ram_word << " " << std::hex << sel << std::endl;
         top.p_data__in.set<uint32_t>(
           ram_word
         );
@@ -93,20 +93,36 @@ int main()
     }
 
     top.step();
-    // std::cout << "INSTRUCTION: " << std::setfill('0') << std::setw(8) << std::hex << top.p_instruction.get<uint32_t>() << " ";
-    // std::cout << "RA: " << top.memory_p_r[1].get<uint32_t>() << " ";
-    // std::cout << "R[1] (RA): " << std::hex << top.memory_p_r[1].get<uint32_t>() << " ";
-    // // std::cout << "RD: " << std::hex << top.p_decoder_2e_rd.get<uint32_t>() << " ";
-    // std::cout << "B: " << std::hex << top.p_decoder_2e_branch.get<bool>() << " ";
-    // std::cout << "CALC_ACK: " << std::hex << ack << " ";
-    // std::cout << "CALC_ACK2: " << std::hex << (top.p_mem.get<bool>() && addr == 1024) << " ";
-    // std::cout << "ACK: " << std::hex << top.p_ack.get<bool>() << " ";
-    // std::cout << "ADDR: " << std::hex << top.p_addr.get<uint32_t>() << " ";
-    // std::cout << "BT: " << std::hex << top.p_branch__taken.get<bool>() << " ";
-    // // // std::cout << "JAL: " << std::hex << top.p_decoder_2e_jal.get<bool>() << " ";
-    // std::cout << "DM: " << std::hex << top.p_mem.get<bool>() << " ";
-    // std::cout << "DMW: " << std::hex << top.p_mem__write.get<bool>() << " ";
+    top.debug_eval();
+    // // std::cout << "BYTE_IN: " << std::setfill('0') << std::setw(2) << std::hex << top.p_byte__in.get<uint16_t>() << " ";
+    // // std::cout << "BADDR: " << std::setfill('0') << std::setw(2) << std::hex << top.p_byte__addr.get<uint32_t>() << " ";
+    // // // std::cout << "INSTRUCTION: " << std::setfill('0') << std::setw(8) << std::hex << top.p_instruction.get<uint32_t>() << " ";
+    // // // std::cout << "RA: " << top.memory_p_r[1].get<uint32_t>() << " ";
+    // std::cout << "R[16] (A6): " << std::hex << top.memory_p_r[0x10].get<uint32_t>() << " ";
+    // std::cout << "R[10] (A0): " << std::hex << top.memory_p_r[10].get<uint32_t>() << " ";
+    // std::cout << "RD: " << std::hex << top.p_decoder_2e_rd.get<uint32_t>() << " ";
+    // // std::cout << "RE: " << std::hex << top.memory_p_r[15].get<uint32_t>() << " ";
+    // // std::cout << "WB: " << std::hex << top.p_wb.get<uint32_t>() << " ";
+    // std::cout << "ALU_RESULTS: " << std::hex << top.p_alu__results.get<uint32_t>() << " ";
+    // std::cout << "IMM: " << std::hex << top.p_alu__results.get<uint32_t>() << " ";
+    // // // std::cout << "B: " << std::hex << top.p_decoder_2e_branch.get<bool>() << " ";
+    // // // std::cout << "CALC_ACK: " << std::hex << ack << " ";
+    // // // std::cout << "CALC_ACK2: " << std::hex << (top.p_mem.get<bool>() && addr == 1024) << " ";
+    // // // std::cout << "ACK: " << std::hex << top.p_ack.get<bool>() << " ";
+    // // // std::cout << "ADDR: " << std::hex << top.p_addr.get<uint32_t>() << " ";
+    // // // std::cout << "BT: " << std::hex << top.p_branch__taken.get<bool>() << " ";
+    // // // // // std::cout << "JAL: " << std::hex << top.p_decoder_2e_jal.get<bool>() << " ";
+    // // // std::cout << "DM: " << std::hex << top.p_mem.get<bool>() << " ";
+    // // // std::cout << "DMW: " << std::hex << top.p_mem__write.get<bool>() << " ";
+    // std::cout << "DIN: " << std::hex << top.p_data__in.get<uint32_t>() << " ";
+    // std::cout << "BIN: " << std::hex << top.p_byte__in.get<uint32_t>() << " ";
+    // // std::cout << "SRBI: " << std::hex << top.p_sel__rb__imm.get<uint16_t>() << " ";
+    // // std::cout << "DRB: " << std::setw(8) << std::hex << top.p_decoder__rb.get<uint32_t>() << " ";
+    // std::cout << "MEM: " << std::setw(8) << std::hex << top.p_mem.get<uint32_t>() << " ";
+    // std::cout << "MEM_WIDTH: " << std::setw(8) << std::hex << top.p_mem__width.get<uint32_t>() << " ";
     // std::cout << "PC: " << std::hex << pc << std::endl;
+    // // top.step();
+    // // top.debug_eval();
 
     top.p_ack.set<bool>(ack);
     top.p_clk.set<bool>(true);

@@ -40,7 +40,7 @@ shifter shifter(
   .rb(rb),
 
   .logic_alt(logic_alt),
-  .funct3(funct3),
+  .shift_right(funct3[2]),
   .out(shifter_out)
 );
 

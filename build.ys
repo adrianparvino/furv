@@ -7,15 +7,16 @@ hierarchy -top top
 proc
 
 alumacc
-share -aggressive
+opt -fine -full
 
 flatten
-pmux2shiftx -min_density 75;
-opt -fast
+pmux2shiftx;
+opt -fast -mux_bool
 techmap t:$shiftx
 muxcover -mux4 -mux8
 memory -nomap
 opt -fine -full
+opt_clean -purge
 
 synth_gowin -nobram -abc9
 techmap -map rom.v -autoproc
