@@ -73,7 +73,7 @@ alu alu(
 
   .arith_out(arith_out),
   .logic_out(logic_out),
-  .shifter_out(shifter_out),
+  .shifter_out(shifter_out)
 );
 
 cu cu(
@@ -151,7 +151,12 @@ reg mem_write_internal;
 reg logic_alt;
 reg [2:0] funct3;
 
-reg [255:0] pipeline_alu_results;
+reg [31:0] pipeline_logic_results;
+reg [31:0] pipeline_shifter_results;
+reg [31:0] pipeline_arith_results;
+reg pipeline_comparison_results;
+
+reg [1:0] alu_sel;
 
 always @(posedge clk) begin
   // $display("PC=%x SRP=%x SRI=%x IMM=%x AO=%x PIM=%x A5=%x S0=%x", pc, sel_ra_pc, sel_rb_imm, imm, arith_out, pc + imm, r[15], r[8]);
@@ -162,7 +167,9 @@ always @(posedge clk) begin
       stage <= DE;
     end
     DE: begin
-      ra <= r[decoder_ra];
+      if (wb == 2 && decoder_funct3 == 1) for (i=0;i<32;i=i+1) ra[i] <= r[decoder_ra][32 - 1 - i];
+      else ra <= r[decoder_ra];
+
       rb <= sel_rb_imm ? decoder_imm : r[decoder_rb];
       imm <= decoder_imm;
       mem_width <= decoder_mem_width;
@@ -193,16 +200,17 @@ always @(posedge clk) begin
       branch_taken <= branch && (jal || comparison_out);
       branch_pc <= (pc_ra_imm ? ra : pc) + imm;
 
-      pipeline_alu_results <= {
-        logic_out,
-        logic_out,
-        shifter_out,
-        logic_out,
-        {31'b0, arith_unsigned_compare},
-        {31'b0, arith_signed_compare},
-        shifter_out,
-        arith_out
-      };
+      pipeline_arith_results <= arith_out;
+      pipeline_shifter_results <= shifter_out;
+      pipeline_comparison_results <= funct3[0] ? arith_unsigned_compare : arith_signed_compare;
+      pipeline_logic_results <= logic_out;
+
+      case (funct3)
+        0: alu_sel <= 0;
+        1,5: alu_sel <= 1;
+        2,3: alu_sel <= 2;
+        4,6,7: alu_sel <= 3;
+      endcase
 
       stage <= WB;
     end WB: begin
@@ -222,7 +230,12 @@ always @(posedge clk) begin
             r[rd] <= adjacent_pc;
           end
           4'b??10: begin 
-            r[rd] <= pipeline_alu_results[32*funct3+:32];
+            case (alu_sel)
+              0: r[rd] <= pipeline_arith_results;
+              1: r[rd] <= pipeline_shifter_results;
+              2: r[rd] <= pipeline_comparison_results;
+              3: r[rd] <= pipeline_logic_results;
+            endcase
           end
           4'b??11: begin 
             r[rd] <= lui ? imm : pc + imm;
