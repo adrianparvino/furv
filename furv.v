@@ -1,260 +1,225 @@
 module furv(
     input [31:0] instruction,
-    output reg [31:0] pc = 0,
+    output [31:0] pc,
 
     input [31:0] data_in,
-    output reg [31:0] data_out = 0,
-    output reg [29:0] addr = 0,
-    output reg [3:0] sel = 0,
-    output reg mem = 0,
-    output reg mem_write = 0,
+    output [31:0] data_out,
+    output [29:0] addr,
+    output [3:0] sel,
+    output mem,
+    output mem_write,
     input ack,
 
     input clk
 );
 
-integer i;
+wire [31:0] if_pc;
+wire [31:0] instruction_fetched;
+wire branch_calculated;
+wire branch_taken;
+wire [31:0] branch_pc;
 
-reg [31:0] r [31:0];
-initial for (i=0;i<32;i=i+1) r[i] = 32'b0;
+wire if_stall;
+wire if_valid_o;
 
-wire [4:0] decoder_ra;
-wire [4:0] decoder_rb;
-wire [4:0] rd;
-wire [1:0] wb;
+furv_if furv_if(
+  .pc(pc),
+  .instruction_i(instruction),
+  .if_pc(if_pc),
+  .instruction(instruction_fetched),
 
-wire lui;
-wire jalr;
+  .branch_calculated(branch_calculated),
+  .branch_taken(branch_taken),
+  .branch_pc(branch_pc),
 
-wire arith_mode;
-wire decoder_logic_alt;
-wire [2:0] decoder_funct3;
-wire lt;
-wire invert_comparison;
-wire unsigned_comparison;
+  .stall_i(if_stall),
+  .stall_o(),
 
-wire arith_unsigned_compare;
-wire arith_signed_compare;
+  .valid_i(1'b1),
+  .valid_o(if_valid_o),
 
-wire [31:0] arith_out;
-wire [31:0] logic_out;
-wire [31:0] shifter_out;
-wire comparison_out;
-
-wire [31:0] decoder_imm;
-
-wire sel_ra_pc;
-wire sel_rb_imm;
-
-wire decoder_mem;
-wire decoder_mem_write;
-wire [1:0] decoder_mem_width;
-wire decoder_mem_unsigned;
-
-wire branch;
-wire jal;
-wire u;
-
-immdecoder immdecoder(
-  .instruction(fetched_instruction),
-  .imm(decoder_imm)
+  .clk(clk)
 );
 
-alu alu(
-  .ra(ra),
-  .rb(rb),
+wire [4:0] de_rs1_index;
+wire [4:0] de_rs2_index;
+wire [4:0] de_lock_rd;
+wire [31:0] rf_rs1;
+wire [31:0] rf_rs2;
+wire rf_rs1_ready;
+wire rf_rs2_ready;
 
-  .arith_mode(arith_mode),
-  .logic_alt(logic_alt),
-  .funct3(funct3),
+wire [31:0] de_alu_a;
+wire [31:0] de_alu_b;
+wire [4:0] de_rd;
+wire [1:0] de_alu_op;
+wire de_alu_sel_logic;
+wire [31:0] de_alu_rs1;
+wire [31:0] de_alu_rs2;
+wire [1:0] de_wb_sel;
+wire de_branch;
+wire de_mem;
+wire de_mem_write;
+wire [1:0] de_mem_width;
+wire de_mem_unsigned;
+wire de_reverse_wb;
+wire de_lt;
+wire de_invert_comparison;
+wire de_unsigned_comparison;
 
-  .arith_unsigned_compare(arith_unsigned_compare),
-  .arith_signed_compare(arith_signed_compare),
+wire de_stall;
+wire de_valid_o;
 
-  .arith_out(arith_out),
-  .logic_out(logic_out),
-  .shifter_out(shifter_out)
+wire [4:0] wb_rel_rd;
+wire [31:0] wb_rd_value;
+wire wb_rd_ready;
+
+furv_rf furv_rf(
+  .de_rs1_index(de_rs1_index),
+  .de_rs2_index(de_rs2_index),
+  .de_lock_rd(de_lock_rd),
+  .rf_rs1(rf_rs1),
+  .rf_rs2(rf_rs2),
+  .rf_rs1_ready(rf_rs1_ready),
+  .rf_rs2_ready(rf_rs2_ready),
+
+  .wb_rel_rd(wb_rel_rd),
+  .wb_rd_value(wb_rd_value),
+  .wb_rd_ready(wb_rd_ready),
+
+  .stall_i(if_stall),
+
+  .clk(clk)
 );
 
-cu cu(
-  .ra(ra),
-  .rb(rb),
+furv_de furv_de(
+  .instruction(instruction_fetched),
+  .pc(if_pc),
 
-  .lt(lt),
-  .invert(invert_comparison),
-  .unsigned_comparison(unsigned_comparison),
+  .de_rs1_index(de_rs1_index),
+  .de_rs2_index(de_rs2_index),
+  .de_lock_rd(de_lock_rd),
+  .rf_rs1(rf_rs1),
+  .rf_rs2(rf_rs2),
+  .rf_rs1_ready(rf_rs1_ready),
+  .rf_rs2_ready(rf_rs2_ready),
 
-  .out(comparison_out)
+  .de_alu_a(de_alu_a),
+  .de_alu_b(de_alu_b),
+  .de_rd(de_rd),
+  .de_alu_sel_logic(de_alu_sel_logic),
+  .de_alu_op(de_alu_op),
+  .de_alu_rs1(de_alu_rs1),
+  .de_alu_rs2(de_alu_rs2),
+  .de_wb_sel(de_wb_sel),
+  .de_branch(de_branch),
+  .de_mem(de_mem),
+  .de_mem_write(de_mem_write),
+  .de_mem_width(de_mem_width),
+  .de_mem_unsigned(de_mem_unsigned),
+  .de_reverse_wb(de_reverse_wb),
+  .de_lt(de_lt),
+  .de_invert_comparison(de_invert_comparison),
+  .de_unsigned_comparison(de_unsigned_comparison),
+
+  .stall_i(de_stall),
+  .stall_o(if_stall),
+
+  .valid_i(if_valid_o),
+  .valid_o(de_valid_o),
+
+  .clk(clk)
 );
 
-decoder decoder(
-  .instruction(fetched_instruction),
+wire [31:0] exm_alu_results;
+wire [31:0] exm_shifter_results;
+wire [31:0] exm_adjacent_pc;
+wire [31:0] exm_u_results;
+wire [4:0] exm_rd;
+wire [1:0] exm_wb_sel;
+wire [1:0] exm_mem_width;
+wire exm_mem_unsigned;
+wire [1:0] exm_byte_addr;
+wire exm_reverse_wb;
 
-  .ra(decoder_ra),
-  .rb(decoder_rb),
-  .rd(rd),
-  .wb(wb),
-  .lui(lui),
-  .jalr(jalr),
+wire exm_stall;
+wire exm_valid_o;
 
-  .sel_ra_pc(sel_ra_pc),
-  .sel_rb_imm(sel_rb_imm),
+furv_exm furv_exm(
+  .alu_a(de_alu_a),
+  .alu_b(de_alu_b),
+  .rd(de_rd),
+  .alu_sel_logic(de_alu_sel_logic),
+  .alu_op(de_alu_op),
+  .alu_rs1(de_alu_rs1),
+  .alu_rs2(de_alu_rs2),
+  .wb_sel(de_wb_sel),
+  .branch(de_branch),
+  .mem(de_mem),
+  .mem_write(de_mem_write),
+  .mem_width(de_mem_width),
+  .mem_unsigned(de_mem_unsigned),
+  .reverse_wb(de_reverse_wb),
+  .lt(de_lt),
+  .invert_comparison(de_invert_comparison),
+  .unsigned_comparison(de_unsigned_comparison),
 
-  .mem(decoder_mem),
-  .mem_write(decoder_mem_write),
-  .mem_width(decoder_mem_width),
-  .mem_unsigned(decoder_mem_unsigned),
+  .exm_mem(mem),
+  .exm_mem_write(mem_write),
+  .exm_mem_width(exm_mem_width),
+  .exm_mem_unsigned(exm_mem_unsigned),
+  .exm_sel(sel),
+  .exm_addr(addr),
+  .exm_data_out(data_out),
+  .exm_wb_sel(exm_wb_sel),
+  .exm_byte_addr(exm_byte_addr),
+  .exm_reverse_wb(exm_reverse_wb),
 
-  .branch(branch),
-  .jal(jal),
-  .u(u),
+  .exm_alu_results(exm_alu_results),
+  .exm_shifter_results(exm_shifter_results),
+  .exm_adjacent_pc(exm_adjacent_pc),
+  .exm_u_results(exm_u_results),
+  .exm_rd(exm_rd),
 
-  .arith_mode(arith_mode),
-  .logic_alt(decoder_logic_alt),
-  .funct3(decoder_funct3),
-  .lt(lt),
-  .invert_comparison(invert_comparison),
-  .unsigned_comparison(unsigned_comparison)
+  .exm_branch_calculated(branch_calculated),
+  .exm_branch_taken(branch_taken),
+  .exm_branch_pc(branch_pc),
+
+  .stall_i(exm_stall),
+  .stall_o(de_stall),
+
+  .valid_i(de_valid_o),
+  .valid_o(exm_valid_o),
+
+  .clk(clk)
 );
 
-reg [15:0] word_in = 0;
-reg [7:0] byte_in = 0;
-reg branch_taken;
-reg [31:0] branch_pc;
-reg pc_ra_imm;
-wire [31:0] adjacent_pc = pc + 4;
+furv_wb furv_wb(
+  .rd(exm_rd),
+  .wb_sel(exm_wb_sel),
+  .mem_width(exm_mem_width),
+  .mem_unsigned(exm_mem_unsigned),
+  .alu_results(exm_alu_results),
+  .shifter_results(exm_shifter_results),
+  .adjacent_pc(exm_adjacent_pc),
+  .reverse_wb(exm_reverse_wb),
 
-wire [31:0] agu = ra + imm;
-wire [1:0] byte_addr = agu[1:0];
+  .mem(mem),
+  .mem_ack(ack),
+  .data_in(data_in),
+  .byte_addr(exm_byte_addr),
 
-always @* begin
-  word_in = byte_addr[1] ? data_in[31:16] : data_in[15:0];
-  byte_in = byte_addr[1] ? (byte_addr[0] ? data_in[31:24] : data_in[23:16]) : (byte_addr[0] ? data_in[15:8] : data_in[7:0]);
-end
+  .wb_rel_rd(wb_rel_rd),
+  .wb_rd_value(wb_rd_value),
+  .wb_rd_ready(wb_rd_ready),
 
-reg [31:0] fetched_instruction;
-localparam IF = 0;
-localparam DE = 1;
-localparam EXM = 2;
-localparam WB = 3;
-reg [1:0] stage = 0;
+  .stall_i(1'b0),
+  .stall_o(exm_stall),
 
-reg [31:0] ra;
-reg [31:0] rb;
+  .valid_i(exm_valid_o),
+  .valid_o(),
 
-reg [31:0] alu_results;
-reg [31:0] imm;
-reg [1:0] mem_width;
-reg mem_internal;
-reg mem_write_internal;
-
-reg logic_alt;
-reg [2:0] funct3;
-
-reg [31:0] pipeline_logic_results;
-reg [31:0] pipeline_shifter_results;
-reg [31:0] pipeline_arith_results;
-reg pipeline_comparison_results;
-
-reg [1:0] alu_sel;
-
-always @(posedge clk) begin
-  // $display("PC=%x SRP=%x SRI=%x IMM=%x AO=%x PIM=%x A5=%x S0=%x", pc, sel_ra_pc, sel_rb_imm, imm, arith_out, pc + imm, r[15], r[8]);
-  // $display("PC=%x A4=%x A5=%x JAL=%b CO=%b", pc, r[14], r[15], jal, comparison_out);
-  case (stage)
-    IF: begin
-      fetched_instruction <= instruction;
-      stage <= DE;
-    end
-    DE: begin
-      if (wb == 2 && decoder_funct3 == 1) for (i=0;i<32;i=i+1) ra[i] <= r[decoder_ra][32 - 1 - i];
-      else ra <= r[decoder_ra];
-
-      rb <= sel_rb_imm ? decoder_imm : r[decoder_rb];
-      imm <= decoder_imm;
-      mem_width <= decoder_mem_width;
-      pc_ra_imm <= jal && jalr;
-      mem_internal <= decoder_mem;
-      mem_write_internal <= decoder_mem_write;
-      logic_alt <= decoder_logic_alt;
-      funct3 <= decoder_funct3;
-
-      stage <= EXM;
-    end
-    EXM: begin
-      mem <= mem_internal;
-      mem_write <= mem_write_internal;
-
-      addr <= agu[31:2];
-
-      data_out[7:0] <= rb[7:0];
-      data_out[15:8] <= byte_addr[0] ? rb[7:0] : rb[15:8];
-      data_out[23:16] <= byte_addr[1] ? rb[7:0] : rb[23:16];
-      data_out[31:24] <= byte_addr[1] ? (byte_addr[0] ? rb[7:0] : rb[15:8]) : (byte_addr[0] ? rb[23:16] : rb[31:24]);
-
-      sel[0] <= mem_width == 2 || byte_addr == 0;
-      sel[1] <= mem_width == 2 || (mem_width == 1 && byte_addr == 0) || byte_addr == 1;
-      sel[2] <= mem_width == 2 || byte_addr == 2;
-      sel[3] <= mem_width == 2 || (mem_width == 1 && byte_addr == 2) || byte_addr == 3;
-
-      branch_taken <= branch && (jal || comparison_out);
-      branch_pc <= (pc_ra_imm ? ra : pc) + imm;
-
-      pipeline_arith_results <= arith_out;
-      pipeline_shifter_results <= shifter_out;
-      pipeline_comparison_results <= funct3[0] ? arith_unsigned_compare : arith_signed_compare;
-      pipeline_logic_results <= logic_out;
-
-      case (funct3)
-        0: alu_sel <= 0;
-        1,5: alu_sel <= 1;
-        2,3: alu_sel <= 2;
-        4,6,7: alu_sel <= 3;
-      endcase
-
-      stage <= WB;
-    end WB: begin
-      if (!mem || ack) begin
-        if (rd != 0) begin
-          casez ({mem_width, wb})
-          4'b0000: begin
-            r[rd] <= {{24{!decoder_mem_unsigned & byte_in[7]}}, byte_in};
-          end
-          4'b0100: begin
-            r[rd] <= {{16{!decoder_mem_unsigned & word_in[15]}}, word_in};
-          end
-          4'b1000: begin 
-            r[rd] <= data_in;
-          end
-          4'b??01: begin 
-            r[rd] <= adjacent_pc;
-          end
-          4'b??10: begin 
-            case (alu_sel)
-              0: r[rd] <= pipeline_arith_results;
-              1: r[rd] <= pipeline_shifter_results;
-              2: r[rd] <= pipeline_comparison_results;
-              3: r[rd] <= pipeline_logic_results;
-            endcase
-          end
-          4'b??11: begin 
-            r[rd] <= lui ? imm : pc + imm;
-          end
-          endcase
-        end
-
-        case (branch_taken)
-        0: pc <= adjacent_pc;
-        1: pc <= branch_pc;
-        endcase
-
-        stage <= IF;
-
-        mem <= 0;
-        mem_write <= 0;
-      end
-    end
-  endcase
-end
+  .clk(clk)
+);
 
 endmodule

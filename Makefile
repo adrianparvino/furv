@@ -1,9 +1,8 @@
-myrv.json: firmware au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v rom.v ram.v uart.v top.v build.ys rom_sim.v shifter.v led.v
+myrv.json: firmware furv_if.v furv_de.v furv_exm.v furv_wb.v furv_rf.v au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v rom.v ram.v uart.v top.v build.ys rom_sim.v shifter.v led.v
 	yosys -gl meow.log build.ys
-	# yosys -p "read_verilog au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v rom.v ram.v uart.v top.v; proc; synth_gowin -json myrv.json";
 
 pnrmyrv.json: myrv.json tangnano9k.cst
-	nextpnr-gowin --json $< --write $@ --device GW1NR-LV9QN88PC6/I5 --family GW1N-9C --cst tangnano9k.cst --router router2 --freq 48 --tmg-ripup --placer-heap-cell-placement-timeout 1 --placer-heap-timingweight 100 --placer-heap-alpha 0.05
+	nextpnr-gowin --json $< --write $@ --device GW1NR-LV9QN88PC6/I5 --family GW1N-9C --cst tangnano9k.cst --router router2 --freq 85 --tmg-ripup --placer-heap-cell-placement-timeout 1 --placer-heap-timingweight 100 --placer-heap-alpha 0.2
 
 himbaechel-pnrmyrv.json: myrv.json tangnano9k.cst
 	nextpnr-himbaechel --json $< --write $@ --device GW1NR-LV9QN88PC6/I5 --vopt family=GW1N-9C --vopt cst=tangnano9k.cst --router router2 --placer-heap-timingweight 30
@@ -29,8 +28,8 @@ count.bin: count.elf
 firmware: count.bin
 	{ echo @00000000 ; { hexdump -v -e '1/1 "%02x "' count.bin; yes '00 ' | tr -d '\n'; } | head -c 768; } > firmware
 
-furv.cpp: count.bin au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v shifter.v
-	yosys -q -l cxxrtl.log -p 'read_verilog -specify -lib +/gowin/cells_sim.v; read_verilog au.v lu.v cu.v shifter.v alu.v decoder.v immdecoder.v furv.v; hierarchy -top furv;; proc; flatten; techmap -map +/gowin/cells_sim.v; write_cxxrtl furv.cpp'
+furv.cpp: count.bin furv.v furv_wb.v furv_rf.v furv_if.v immdecoder.v furv_de.v furv_exm.v alu.v cu.v shifter.v au.v lu.v
+	yosys -q -l cxxrtl.log -p 'read_verilog shifter.v lu.v immdecoder.v au.v alu.v cu.v furv_rf.v furv_wb.v furv_exm.v furv_de.v furv_if.v furv.v; hierarchy -top furv;; proc; flatten; memory -nomap; opt -fine -full; techmap -map +/gowin/cells_sim.v; write_cxxrtl furv.cpp'
 
 sim: sim.cpp furv.cpp
 	g++ -g -O3 -std=c++14 -I `yosys-config --datdir`/include sim.cpp -o sim

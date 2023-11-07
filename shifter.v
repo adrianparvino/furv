@@ -1,21 +1,10 @@
 module shifter (
   input [31:0] ra,
   input [31:0] rb,
-
   input logic_alt,
-  input shift_right,
+
   output reg [31:0] out
 );
-
-integer i;
-
-always @* begin
-  if (shift_right)
-    out = shift16;
-  else
-    for(i=0;i<32;i=i+1)
-        out[i] = shift16[32-1-i];
-end
 
 genvar j;
 
@@ -83,5 +72,9 @@ generate
     LUT4 #(.INIT(16'b1000111110000000)) A(.F(shift16[j]), .I0(logic_alt), .I1(ra[32 - 1]), .I2(rb[4]), .I3(shift12[j]));
   end
 endgenerate
+
+always @* begin
+  out = shift16;
+end
 
 endmodule

@@ -1,5 +1,5 @@
 module uart#(
-  parameter CLOCKS_PER_BIT = 104,
+  parameter CLOCKS_PER_BIT = 208,
   parameter TX_FIFO = 16,
   parameter RX_FIFO = 16
 )(
@@ -15,6 +15,8 @@ module uart#(
     input rx_pop,
     output rx_ack
 );
+
+integer i;
 
 localparam UART_IDLE = 0;
 localparam UART_START = 1;
@@ -126,14 +128,9 @@ always @(posedge clk) begin
   end
 
   if (rx_sample) begin
-    if (rx_index == 0) rx_shift_register[0] <= uart_rx;
-    if (rx_index == 1) rx_shift_register[1] <= uart_rx;
-    if (rx_index == 2) rx_shift_register[2] <= uart_rx;
-    if (rx_index == 3) rx_shift_register[3] <= uart_rx;
-    if (rx_index == 4) rx_shift_register[4] <= uart_rx;
-    if (rx_index == 5) rx_shift_register[5] <= uart_rx;
-    if (rx_index == 6) rx_shift_register[6] <= uart_rx;
-    if (rx_index == 7) rx_shift_register[7] <= uart_rx;
+    for (i = 0; i < 8; i=i+1) begin
+      if (rx_index == i) rx_shift_register[i] <= uart_rx;
+    end
 
     rx_index <= rx_state == UART_START ? 0 : rx_index + 1;
   end

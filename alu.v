@@ -2,46 +2,36 @@ module alu (
   input [31:0] ra,
   input [31:0] rb,
 
-  input arith_mode,
-  input logic_alt,
-  input [2:0] funct3,
-
-  output arith_unsigned_compare,
-  output arith_signed_compare,
+  input sel_logic,
+  input [1:0] op,
 
   output [31:0] arith_out,
-  output [31:0] logic_out,
-  output [31:0] shifter_out
+  output reg [31:0] alu_out
 );
 
-wire [31:0] lu_out;
-wire [31:0] shifter_out;
-reg ignore;
+wire [31:0] logic_out;
 
 au au(
   .ra(ra),
   .rb(rb),
-  .mode(arith_mode),
-  .out(arith_out),
-  .unsigned_compare(arith_unsigned_compare),
-  .signed_compare(arith_signed_compare)
+  .op(op),
+
+  .out(arith_out)
 );
 
 lu lu(
   .ra(ra),
   .rb(rb),
-  .alt(logic_alt),
-  .funct3(funct3),
+  .op(op),
+
   .out(logic_out)
 );
 
-shifter shifter(
-  .ra(ra),
-  .rb(rb),
-
-  .logic_alt(logic_alt),
-  .shift_right(funct3[2]),
-  .out(shifter_out)
-);
+always @* begin
+  case (sel_logic)
+  0: alu_out = arith_out;
+  1: alu_out = logic_out;
+  endcase
+end
 
 endmodule

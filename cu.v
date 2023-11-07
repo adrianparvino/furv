@@ -10,14 +10,14 @@ module cu (
 );
 
 always @* begin
-  casez ({lt, invert, unsigned_comparison})
-  3'b00?: out = ra == rb;
-  3'b01?: out = ra != rb;
-  3'b100: out = $signed(ra) < $signed(rb);
-  3'b101: out = ra < rb;
-  3'b110: out = $signed(ra) >= $signed(rb);
-  3'b111: out = ra >= rb;
+  casez ({lt, unsigned_comparison})
+  2'b00: out = ra == rb;
+  2'b01: out = 1;
+  2'b10: out = $signed(ra) < $signed(rb);
+  2'b11: out = ra < rb;
   endcase
+
+  if (invert) out = !out;
 end
 
 endmodule

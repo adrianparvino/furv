@@ -1,21 +1,22 @@
 read_verilog -specify -lib +/gowin/cells_sim.v
 
-read_verilog uart.v au.v lu.v cu.v alu.v decoder.v immdecoder.v furv.v ram.v shifter.v rom_sim.v led.v top.v
+read_verilog uart.v au.v lu.v immdecoder.v cu.v alu.v furv_rf.v furv_wb.v furv_exm.v furv_de.v furv_if.v furv.v ram.v shifter.v rom_sim.v led.v top.v
 
 hierarchy -top top
 
 proc
 
 alumacc
-opt -fine -full
 
+scratchpad -set abc9.D 6944
+scratchpad -copy abc9.script.flow3 abc9.script
 flatten
+opt -fast;
 pmux2shiftx;
-opt -fast -mux_bool
+opt -fast;
 techmap t:$shiftx
-muxcover -mux4 -mux8
-memory -nomap
 opt -fine -full
+memory -nomap
 opt_clean -purge
 
 synth_gowin -nobram -abc9
